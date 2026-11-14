@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Les additions – jeu pour Adam</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;font-family:"Trebuchet MS",Verdana,sans-serif;background:#fffaf0;color:#1f3a4d;min-height:100vh}
+header{background:#ffd08a;padding:14px;text-align:center;font-size:24px;font-weight:bold}
+main{max-width:640px;margin:0 auto;padding:10px 14px 40px}
+a.back{display:inline-block;text-decoration:none;color:#1f3a4d;background:#fff;border:3px solid #5aa9d6;border-radius:14px;padding:8px 14px;font-size:18px}
+.opts{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:10px 0}
+.opts button{font:inherit;font-size:17px;padding:10px 14px;border:3px solid #e8993a;background:#fff;border-radius:14px}
+.opts button.on{background:#e8993a;color:#fff}
+.hide{display:none!important}
+.card{background:#fff;border-radius:24px;border:4px solid #e8993a;text-align:center;padding:18px 8px;margin:8px 0}
+.row{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
+.grp{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:40%}
+.dot{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:22px;color:#fff;border:3px solid}
+.dot.a{background:#1F5FBF;border-color:#123a78}.dot.b{background:#E8730C;border-color:#8a3f00}
+.sym{font-size:44px;font-weight:bold}
+.q{font-size:70px;font-weight:bold;min-width:70px}
+.big{font-size:64px;font-weight:bold}
+.choices{display:flex;gap:12px}
+.choices button{flex:1;font:inherit;font-size:48px;font-weight:bold;padding:18px 6px;border-radius:20px;border:4px solid #3f86b8;background:#fff;color:#1f3a4d}
+.choices button.bad{background:#fde1de;border-color:#c0392b;color:#c0392b}
+.choices button.good{background:#c8efd6;border-color:#2f9e5b;color:#1f7a42}
+.stars{font-size:26px;text-align:center;min-height:36px;letter-spacing:2px}
+.msg{font-size:24px;font-weight:bold;text-align:center;min-height:40px;margin:6px 0}
+.ok{color:#1f7a42}.ko{color:#c0392b}
+.shake{animation:sh .4s}
+@keyframes sh{20%{transform:translateX(-12px)}40%{transform:translateX(12px)}60%{transform:translateX(-8px)}80%{transform:translateX(8px)}}
+.pop{animation:pp .5s}
+@keyframes pp{50%{transform:scale(1.12)}}
+.next,.help{display:block;width:100%;font:inherit;font-size:24px;font-weight:bold;padding:14px;margin-top:10px;border-radius:18px;border:4px solid #5aa9d6;background:#fff}
+.help{font-size:20px;border-color:#e0a800;background:#fff7d6}
+.prog{height:14px;background:#eee;border-radius:8px;overflow:hidden;margin:6px 0}
+.prog i{display:block;height:100%;background:#4fae6b;width:0;transition:width .3s}
+</style>
+</head>
+<body>
+<header>➕ Je compte et j'ajoute</header>
+<main>
+<a class="back" href="maths.html">⬅ Maths</a>
+<div class="opts" id="lv">
+  <button data-l="3" class="on">Niveau 1 : jusqu'à 3</button>
+  <button data-l="5">Niveau 2 : jusqu'à 5</button>
+  <button data-l="7">Niveau 3 : jusqu'à 7</button>
+</div>
+<div class="opts" id="md">
+  <button data-m="dots" class="on">🔵🟠 Avec les ronds</button>
+  <button data-m="num">🔢 Avec les chiffres</button>
+</div>
+<div class="prog"><i id="pr"></i></div>
+<div class="stars" id="stars"></div>
+<div id="game">
+  <div class="card" id="card"><div class="row" id="eq"></div></div>
+  <button class="help hide" id="help">👀 Je veux de l'aide</button>
+  <div class="msg" id="msg"></div>
+  <div class="choices" id="ch"></div>
+  <button class="next hide" id="next">Suivant ➜</button>
+</div>
+<div class="card hide" id="end"><div class="big">🏆</div><div class="big" id="score" style="font-size:36px"></div>
+  <button class="next" id="again">🔁 Rejouer</button></div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+let max=3,mode='dots',N=10,qi=0,cur=null,firstTry=0,tried=false,stars='';
+function rnd(a,b){return a+Math.floor(Math.random()*(b-a+1))}
+function newQ(){
+  const s=rnd(2,max), a=rnd(1,s-1), b=s-a;
+  let ch=[s];
+  while(ch.length<3){const c=Math.max(0,Math.min(10,s+rnd(-2,2)));if(!ch.includes(c))ch.push(c)}
+  ch.sort(()=>Math.random()-.5);
+  return {a,b,s,ch};
+}
+function dots(n,c){let h='';for(let i=0;i<n;i++)h+='<span class="dot '+c+'"></span>';return h}
+function render(){
+  cur=newQ();tried=false;
+  $('msg').textContent='';$('msg').className='msg';
+  $('next').classList.add('hide');
+  const showDots=mode==='dots';
+  $('eq').innerHTML=showDots
+    ? '<div class="grp" id="ga">'+dots(cur.a,'a')+'</div><span class="sym">+</span><div class="grp" id="gb">'+dots(cur.b,'b')+'</div><span class="sym">=</span><span class="q" id="qq">?</span>'
+    : '<span class="big" id="nn">'+cur.a+' + '+cur.b+' = ?</span>';
+  $('help').classList.toggle('hide',showDots);
+  $('ch').innerHTML=cur.ch.map(v=>'<button data-v="'+v+'">'+v+'</button>').join('');
+  [...$('ch').children].forEach(b=>b.onclick=()=>answer(b));
+}
+function countAll(){
+  const ds=[...document.querySelectorAll('#eq .dot')];
+  ds.forEach((d,i)=>setTimeout(()=>{d.textContent=i+1;d.classList.add('pop')},i*450));
+}
+function answer(b){
+  const v=+b.dataset.v;
+  if(v===cur.s){
+    b.classList.add('good');
+    [...$('ch').children].forEach(x=>x.disabled=true);
+    $('msg').innerHTML='<span class="ok">Bravo ! '+cur.a+' + '+cur.b+' = '+cur.s+' 🎉</span>';
+    const q=$('qq');if(q)q.textContent=cur.s;
+    if(!tried){firstTry++;stars+='⭐'}else stars+='✨';
+    $('stars').textContent=stars;
+    $('next').classList.remove('hide');
+  }else{
+    tried=true;
+    b.classList.add('bad');b.disabled=true;
+    $('card').classList.remove('shake');void $('card').offsetWidth;$('card').classList.add('shake');
+    $('msg').innerHTML='<span class="ko">Compte encore 👇</span>';
+    if(mode==='num')showHelp();
+    countAll();
+  }
+}
+function showHelp(){
+  if(document.getElementById('ga'))return;
+  $('eq').innerHTML='<div class="grp" id="ga">'+dots(cur.a,'a')+'</div><span class="sym">+</span><div class="grp" id="gb">'+dots(cur.b,'b')+'</div><span class="sym">=</span><span class="q" id="qq">?</span>';
+}
+$('help').onclick=()=>{tried=true;showHelp();countAll()};
+$('next').onclick=()=>{
+  qi++;$('pr').style.width=(qi/N*100)+'%';
+  if(qi>=N){$('game').classList.add('hide');$('end').classList.remove('hide');
+    $('score').textContent=firstTry+' / '+N+' du premier coup ! 🌟'}
+  else render();
+};
+function start(){qi=0;firstTry=0;stars='';$('stars').textContent='';$('pr').style.width='0';
+  $('end').classList.add('hide');$('game').classList.remove('hide');render()}
+$('again').onclick=start;
+document.querySelectorAll('#lv button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#lv button').forEach(x=>x.classList.remove('on'));b.classList.add('on');max=+b.dataset.l;start()});
+document.querySelectorAll('#md button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#md button').forEach(x=>x.classList.remove('on'));b.classList.add('on');mode=b.dataset.m;start()});
+start();
+</script>
+</body>
+</html>

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Il manque combien ? – jeu pour Adam</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;font-family:"Trebuchet MS",Verdana,sans-serif;background:#fffaf0;color:#1f3a4d;min-height:100vh}
+header{background:#ffd08a;padding:14px;text-align:center;font-size:24px;font-weight:bold}
+main{max-width:640px;margin:0 auto;padding:10px 14px 40px}
+a.back{display:inline-block;text-decoration:none;color:#1f3a4d;background:#fff;border:3px solid #5aa9d6;border-radius:14px;padding:8px 14px;font-size:18px}
+.opts{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:10px 0}
+.opts button{font:inherit;font-size:17px;padding:10px 14px;border:3px solid #e8993a;background:#fff;border-radius:14px}
+.opts button.on{background:#e8993a;color:#fff}
+.hide{display:none!important}
+.card{background:#fff;border-radius:24px;border:4px solid #e8993a;text-align:center;padding:10px 8px 14px;margin:8px 0}
+svg{width:100%;max-width:380px;height:auto}
+.eq{font-size:52px;font-weight:bold;display:flex;gap:12px;justify-content:center;align-items:center}
+.eq .m{display:inline-flex;width:70px;height:70px;border:4px dashed #e8993a;border-radius:14px;align-items:center;justify-content:center;color:#e8993a}
+.choices{display:flex;gap:12px}
+.choices button{flex:1;font:inherit;font-size:48px;font-weight:bold;padding:18px 6px;border-radius:20px;border:4px solid #3f86b8;background:#fff;color:#1f3a4d}
+.choices button.bad{background:#fde1de;border-color:#c0392b;color:#c0392b}
+.choices button.good{background:#c8efd6;border-color:#2f9e5b;color:#1f7a42}
+.stars{font-size:26px;text-align:center;min-height:36px;letter-spacing:2px}
+.msg{font-size:24px;font-weight:bold;text-align:center;min-height:40px;margin:6px 0}
+.ok{color:#1f7a42}.ko{color:#c0392b}
+.shake{animation:sh .4s}
+@keyframes sh{20%{transform:translateX(-12px)}40%{transform:translateX(12px)}60%{transform:translateX(-8px)}80%{transform:translateX(8px)}}
+.next,.help{display:block;width:100%;font:inherit;font-size:24px;font-weight:bold;padding:14px;margin-top:10px;border-radius:18px;border:4px solid #5aa9d6;background:#fff}
+.help{font-size:20px;border-color:#e0a800;background:#fff7d6}
+.prog{height:14px;background:#eee;border-radius:8px;overflow:hidden;margin:6px 0}
+.prog i{display:block;height:100%;background:#4fae6b;width:0;transition:width .3s}
+.big{font-size:64px;font-weight:bold}
+</style>
+</head>
+<body>
+<header>🍽️ Il manque combien ?</header>
+<main>
+<a class="back" href="maths.html">⬅ Maths</a>
+<div class="opts" id="md">
+  <button data-m="dots" class="on">🔵🟠 Avec les ronds</button>
+  <button data-m="none">🔢 Sans les ronds</button>
+</div>
+<div class="prog"><i id="pr"></i></div>
+<div class="stars" id="stars"></div>
+<div id="game">
+  <div class="card"><div id="plate"></div><div class="eq" id="eq"></div></div>
+  <button class="help hide" id="help">👀 Je veux de l'aide</button>
+  <div class="msg" id="msg"></div>
+  <div class="choices" id="ch"></div>
+  <button class="next hide" id="next">Suivant ➜</button>
+</div>
+<div class="card hide" id="end"><div class="big">🏆</div><div class="big" id="score" style="font-size:36px"></div>
+  <button class="next" id="again">🔁 Rejouer</button></div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const L=[[34,44],[55,44],[76,44],[97,44],[34,74],[55,74],[76,74],[97,74]];
+const R=L.map(p=>[p[0]+86,p[1]]);
+let mode='dots',N=10,qi=0,cur=null,firstTry=0,tried=false,stars='';
+function rnd(a,b){return a+Math.floor(Math.random()*(b-a+1))}
+function text(x,y,v){return '<text x="'+x+'" y="'+y+'" text-anchor="middle" font-size="26" font-weight="800" font-family="Trebuchet MS,Arial" fill="#1f3a4d">'+v+'</text>'}
+function plate(q,showA,showB,fillMissing){
+  const ox=48;let s='<svg viewBox="0 0 316 190">';
+  s+='<g transform="translate('+ox+',38)"><ellipse cx="110" cy="60" rx="106" ry="56" fill="#fff" stroke="#1f3a4d" stroke-width="3"/><ellipse cx="110" cy="60" rx="94" ry="45" fill="#fff" stroke="#1f3a4d" stroke-width="2"/><line x1="116" y1="15" x2="104" y2="105" stroke="#1f3a4d" stroke-width="3"/>';
+  if(showA)for(let i=0;i<q.a;i++)s+='<circle cx="'+L[i][0]+'" cy="'+(L[i][1]+6)+'" r="8" fill="#1F5FBF" stroke="#123a78" stroke-width="2"/>';
+  if(showB)for(let i=0;i<q.b;i++)s+='<circle cx="'+(R[i][0]+4)+'" cy="'+(R[i][1]+6)+'" r="8" fill="#E8730C" stroke="#8a3f00" stroke-width="2"/>';
+  s+='</g><line x1="'+(ox+170)+'" y1="40" x2="'+(ox+155)+'" y2="54" stroke="#1f3a4d" stroke-width="2.5"/>';
+  s+='<rect x="'+(ox+142)+'" y="2" width="56" height="40" rx="9" fill="#fff" stroke="#1f3a4d" stroke-width="2.5"/>'+text(ox+170,32,q.t);
+  [[ox+62,q.hideA?'?':q.a],[ox+158,q.hideA?q.b:'?']].forEach(([cx,v],i)=>{
+    s+='<line x1="'+cx+'" y1="135" x2="'+cx+'" y2="146" stroke="#1f3a4d" stroke-width="2.5"/><rect x="'+(cx-27)+'" y="146" width="54" height="40" rx="9" fill="'+(v==='?'?'#fff7d6':'#fff')+'" stroke="'+(v==='?'?'#e0a800':'#1f3a4d')+'" stroke-width="2.5"'+(v==='?'?' stroke-dasharray="6 4"':'')+'/>'+text(cx,175,v)});
+  return s+'</svg>';
+}
+function newQ(){
+  const level=+document.body.dataset.l||7;
+  const t=rnd(3,level), p=rnd(0,t), m=t-p;
+  const hideA=Math.random()<.5;               // le trou est à gauche ?
+  const a=hideA?m:p, b=hideA?p:m;
+  const forms=['x+_=t','t=x+_'];
+  const f=forms[rnd(0,1)];
+  let ch=[m];
+  while(ch.length<3){const c=Math.max(0,Math.min(9,m+rnd(-2,2)));if(!ch.includes(c))ch.push(c)}
+  ch.sort(()=>Math.random()-.5);
+  return {t,a,b,hideA,m,f,ch};
+}
+function eqHTML(q,v){
+  const hole='<span class="m" id="hole">'+(v===undefined?'?':v)+'</span>';
+  const known=q.hideA?q.b:q.a;
+  const left=q.hideA?hole:known, right=q.hideA?known:hole;
+  return q.f==='x+_=t' ? '<span>'+left+'</span><span>+</span><span>'+right+'</span><span>=</span><span>'+q.t+'</span>'
+                       : '<span>'+q.t+'</span><span>=</span><span>'+left+'</span><span>+</span><span>'+right+'</span>';
+}
+function render(){
+  cur=newQ();tried=false;
+  $('msg').textContent='';$('next').classList.add('hide');
+  $('plate').innerHTML=plate(cur,!cur.hideA&&mode==='dots',cur.hideA&&mode==='dots');
+  // dots shown only on the known side
+  $('eq').innerHTML=eqHTML(cur);
+  $('help').classList.toggle('hide',mode==='dots');
+  $('ch').innerHTML=cur.ch.map(v=>'<button data-v="'+v+'">'+v+'</button>').join('');
+  [...$('ch').children].forEach(b=>b.onclick=()=>answer(b));
+}
+function showAll(){ $('plate').innerHTML=plate(cur,true,true) }
+function answer(b){
+  const v=+b.dataset.v;
+  if(v===cur.m){
+    b.classList.add('good');[...$('ch').children].forEach(x=>x.disabled=true);
+    showAll();$('eq').innerHTML=eqHTML(cur,cur.m);
+    $('msg').innerHTML='<span class="ok">Bravo ! 🎉</span>';
+    if(!tried){firstTry++;stars+='⭐'}else stars+='✨';
+    $('stars').textContent=stars;$('next').classList.remove('hide');
+  }else{
+    tried=true;b.classList.add('bad');b.disabled=true;
+    const c=document.querySelector('.card');c.classList.remove('shake');void c.offsetWidth;c.classList.add('shake');
+    $('msg').innerHTML='<span class="ko">Regarde les ronds 👇</span>';
+    showAll();
+  }
+}
+$('help').onclick=()=>{tried=true;showAll()};
+$('next').onclick=()=>{qi++;$('pr').style.width=(qi/N*100)+'%';
+  if(qi>=N){$('game').classList.add('hide');$('end').classList.remove('hide');$('score').textContent=firstTry+' / '+N+' du premier coup ! 🌟'}
+  else render()};
+function start(){qi=0;firstTry=0;stars='';$('stars').textContent='';$('pr').style.width='0';$('end').classList.add('hide');$('game').classList.remove('hide');render()}
+$('again').onclick=start;
+document.querySelectorAll('#md button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#md button').forEach(x=>x.classList.remove('on'));b.classList.add('on');mode=b.dataset.m;start()});
+document.body.dataset.l=7;
+start();
+</script>
+</body>
+</html>
