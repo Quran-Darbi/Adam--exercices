@@ -37,6 +37,13 @@ a.back{display:inline-block;text-decoration:none;color:#1f3a4d;background:#fff;b
 .help{font-size:20px;border-color:#e0a800;background:#fff7d6}
 .prog{height:14px;background:#eee;border-radius:8px;overflow:hidden;margin:6px 0}
 .prog i{display:block;height:100%;background:#4fae6b;width:0;transition:width .3s}
+.celeb{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:50}
+.celeb span{position:absolute;top:-60px;animation:fall 1.7s linear forwards}
+@keyframes fall{to{transform:translateY(112vh) rotate(360deg)}}
+.celeb .banner{position:absolute;top:28%;left:50%;transform:translateX(-50%);background:#fff7d6;border:5px solid #e0a800;border-radius:24px;padding:14px 26px;font-size:38px;font-weight:bold;white-space:nowrap;animation:pp .6s}
+.navrow{display:flex;gap:10px;margin-top:10px}
+.navrow button{font:inherit;font-size:22px;font-weight:bold;padding:14px;border-radius:18px;border:4px solid #5aa9d6;background:#fff;color:#1f3a4d}
+#prev{flex:0 0 42%}#next{flex:1;background:#d6eefa}
 </style>
 </head>
 <body>
@@ -61,15 +68,34 @@ a.back{display:inline-block;text-decoration:none;color:#1f3a4d;background:#fff;b
   <button class="help hide" id="help">👀 Je veux de l'aide</button>
   <div class="msg" id="msg"></div>
   <div class="choices" id="ch"></div>
-  <button class="next hide" id="next">Suivant ➜</button>
+  <div class="navrow"><button id="prev" class="hide">⬅ Précédent</button><button id="next" class="hide">Suivant ➜</button></div>
 </div>
 <div class="card hide" id="end"><div class="big">🏆</div><div class="big" id="score" style="font-size:36px"></div>
   <button class="next" id="again">🔁 Rejouer</button></div>
 </main>
 <script>
 const $=id=>document.getElementById(id);
-let max=3,mode='dots',N=10,qi=0,cur=null,firstTry=0,tried=false,stars='';
 function rnd(a,b){return a+Math.floor(Math.random()*(b-a+1))}
+let Q=[],R=[],qi=0,cur=null,done=false,timer=null;
+const N=10;
+function celebrate(){const o=document.createElement('div');o.className='celeb';const em=['🎉','⭐','✨','🌟','🎊'];
+  let h='<div class="banner">⭐ Bravo ! ⭐</div>';
+  for(let i=0;i<30;i++)h+='<span style="left:'+rnd(0,94)+'%;animation-delay:'+(Math.random()*.7).toFixed(2)+'s;font-size:'+rnd(26,46)+'px">'+em[rnd(0,4)]+'</span>';
+  o.innerHTML=h;document.body.appendChild(o);setTimeout(()=>o.remove(),2300)}
+function updateTop(){
+  $('pr').style.width=(R.filter(x=>x!==undefined).length/N*100)+'%';
+  let s='';for(let i=0;i<N;i++){if(R[i]===true)s+='⭐';else if(R[i]===false)s+='▫️'}
+  $('stars').textContent=s}
+function go(i){clearTimeout(timer);if(i>=N){finish();return}show(i)}
+function finish(){$('game').classList.add('hide');$('end').classList.remove('hide');
+  $('score').textContent=R.filter(Boolean).length+' / '+N+' du premier coup ! 🌟'}
+function start(){clearTimeout(timer);Q=[];R=[];qi=0;$('end').classList.add('hide');$('game').classList.remove('hide');show(0)}
+function afterCorrect(){celebrate();timer=setTimeout(()=>go(qi+1),2400)}
+function afterWrong(){$('next').classList.remove('hide')}
+function setup(){
+  $('prev').onclick=()=>go(qi-1);$('next').onclick=()=>go(qi+1);$('again').onclick=start;
+}
+let max=3,mode='dots';
 const isMiss=()=>mode==='miss'||mode==='missnum';
 function newQ(){
   const s=rnd(2,max), a=rnd(1,s-1), b=s-a;
@@ -81,63 +107,50 @@ function newQ(){
 }
 function dots(n,c){let h='';for(let i=0;i<n;i++)h+='<span class="dot '+c+'"></span>';return h}
 function sumRow(){return '<div class="grp" id="ga">'+dots(cur.a,'a')+'</div><span class="sym">+</span><div class="grp" id="gb">'+dots(cur.b,'b')+'</div><span class="sym">=</span><span class="q" id="qq">?</span>'}
-function missRow(){ // s ronds : a pleins, le reste en pointillés
-  return '<div class="grp" id="ga" style="max-width:100%">'+dots(cur.a,'a')+dots(cur.s-cur.a,'e')+'</div>'}
+function missRow(){return '<div class="grp" id="ga" style="max-width:100%">'+dots(cur.a,'a')+dots(cur.s-cur.a,'e')+'</div>'}
 function eqMiss(v){return '<div class="big" style="margin-top:8px" id="nn">'+cur.a+' + <span id="qq">'+(v===undefined?'?':v)+'</span> = '+cur.s+'</div>'}
-function render(){
-  cur=newQ();tried=false;
+function show(i){
+  clearTimeout(timer);qi=i;if(!Q[i])Q[i]=newQ();cur=Q[i];done=false;
   $('msg').textContent='';$('msg').className='msg';
-  $('next').classList.add('hide');
+  $('next').classList.add('hide');$('prev').classList.toggle('hide',i===0);
   if(mode==='dots'){$('eq').innerHTML=sumRow();$('help').classList.add('hide')}
   else if(mode==='num'){$('eq').innerHTML='<span class="big" id="nn">'+cur.a+' + '+cur.b+' = ?</span>';$('help').classList.remove('hide')}
   else if(mode==='miss'){$('eq').innerHTML=missRow()+'<div style="width:100%">'+eqMiss()+'</div>';$('help').classList.add('hide')}
   else {$('eq').innerHTML='<div style="width:100%">'+eqMiss()+'</div>';$('help').classList.remove('hide')}
   $('ch').innerHTML=cur.ch.map(v=>'<button data-v="'+v+'">'+v+'</button>').join('');
   [...$('ch').children].forEach(b=>b.onclick=()=>answer(b));
+  updateTop();
 }
 function countAll(){
-  const ds=[...document.querySelectorAll('#eq .dot')];
-  ds.forEach((d,i)=>setTimeout(()=>{d.textContent=i+1;d.classList.add('pop')},i*450));
+  [...document.querySelectorAll('#eq .dot')].forEach((d,i)=>setTimeout(()=>{d.textContent=i+1;d.classList.add('pop')},i*450));
 }
-function revealMiss(){ // colorie les ronds manquants en orange
-  document.querySelectorAll('#eq .dot.e').forEach(d=>{d.classList.remove('e');d.classList.add('b')});
-}
+function revealMiss(){document.querySelectorAll('#eq .dot.e').forEach(d=>{d.classList.remove('e');d.classList.add('b')})}
 function showHelp(){
   if(document.getElementById('ga'))return;
   if(mode==='num')$('eq').innerHTML=sumRow();
   else if(mode==='missnum')$('eq').innerHTML=missRow()+'<div style="width:100%">'+eqMiss()+'</div>';
 }
 function answer(b){
-  const v=+b.dataset.v;
-  if(v===cur.ans){
+  if(done)return;done=true;
+  const v=+b.dataset.v, ok=v===cur.ans;
+  [...$('ch').children].forEach(x=>x.disabled=true);
+  if(R[qi]===undefined)R[qi]=ok;
+  if(ok){
     b.classList.add('good');
-    [...$('ch').children].forEach(x=>x.disabled=true);
-    if(isMiss()){showHelp();revealMiss();$('qq').textContent=cur.ans;
-      $('msg').innerHTML='<span class="ok">Bravo ! '+cur.a+' + '+cur.ans+' = '+cur.s+' 🎉</span>'}
-    else{$('msg').innerHTML='<span class="ok">Bravo ! '+cur.a+' + '+cur.b+' = '+cur.s+' 🎉</span>';const q=$('qq');if(q)q.textContent=cur.s}
-    if(!tried){firstTry++;stars+='⭐'}else stars+='✨';
-    $('stars').textContent=stars;
-    $('next').classList.remove('hide');
+    if(isMiss()){showHelp();revealMiss();$('qq').textContent=cur.ans}else{const q=$('qq');if(q)q.textContent=cur.s}
+    $('msg').innerHTML='<span class="ok">'+cur.a+' + '+cur.b+' = '+cur.s+' 🎉</span>';
+    updateTop();afterCorrect();
   }else{
-    tried=true;
-    b.classList.add('bad');b.disabled=true;
+    b.classList.add('bad');
+    [...$('ch').children].forEach(x=>{if(+x.dataset.v===cur.ans)x.classList.add('good')});
     $('card').classList.remove('shake');void $('card').offsetWidth;$('card').classList.add('shake');
-    $('msg').innerHTML='<span class="ko">Compte encore 👇</span>';
-    if(mode==='num'||mode==='missnum')showHelp();
-    if(isMiss())revealMiss();
-    countAll();
+    $('msg').innerHTML='<span class="ko">Regarde bien 👇 puis appuie sur Suivant</span>';
+    showHelp();if(isMiss())revealMiss();countAll();
+    updateTop();afterWrong();
   }
 }
-$('help').onclick=()=>{tried=true;showHelp();if(isMiss())revealMiss();countAll()};
-$('next').onclick=()=>{
-  qi++;$('pr').style.width=(qi/N*100)+'%';
-  if(qi>=N){$('game').classList.add('hide');$('end').classList.remove('hide');
-    $('score').textContent=firstTry+' / '+N+' du premier coup ! 🌟'}
-  else render();
-};
-function start(){qi=0;firstTry=0;stars='';$('stars').textContent='';$('pr').style.width='0';
-  $('end').classList.add('hide');$('game').classList.remove('hide');render()}
-$('again').onclick=start;
+$('help').onclick=()=>{if(done)return;showHelp();if(isMiss())revealMiss();countAll()};
+setup();
 document.querySelectorAll('#lv button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('#lv button').forEach(x=>x.classList.remove('on'));b.classList.add('on');max=+b.dataset.l;start()});
 document.querySelectorAll('#md button').forEach(b=>b.onclick=()=>{
