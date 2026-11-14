@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mon tableau de réussite – Adam</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;font-family:"Trebuchet MS",Verdana,sans-serif;background:#fffaf0;color:#1f3a4d;min-height:100vh}
+header{background:#ffe27a;padding:14px;text-align:center;font-size:24px;font-weight:bold}
+main{max-width:640px;margin:0 auto;padding:10px 12px 40px}
+a.back{display:inline-block;text-decoration:none;color:#1f3a4d;background:#fff;border:3px solid #5aa9d6;border-radius:14px;padding:8px 14px;font-size:18px}
+.goal{background:#fff;border:4px solid #e0a800;border-radius:20px;padding:12px;margin:12px 0;text-align:center}
+.goal .t{font-size:22px;font-weight:bold}
+.bar{height:26px;background:#eee;border-radius:14px;overflow:hidden;margin:8px 0;border:2px solid #e0a800}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,#ffd54a,#ff9f1c);width:0;transition:width .4s}
+table{width:100%;border-collapse:separate;border-spacing:3px;margin:8px 0;table-layout:fixed}
+th:first-child,td.task{width:34%}
+th{font-size:16px;color:#4a6272;padding:2px}
+th.today{color:#1f3a4d;background:#ffe27a;border-radius:10px}
+td.task{font-size:15px;font-weight:bold;text-align:left;line-height:1.15;padding-right:4px}
+td.task .e{font-size:26px;display:block}
+td button{width:100%;aspect-ratio:1;border:3px solid #c9c9c9;border-radius:12px;background:#fff;font-size:24px;padding:0;color:#bbb}
+td button.on{background:#fff3b0;border-color:#e0a800}
+td.todaycol button{border-color:#e8993a}
+.adult{background:#fff;border:3px solid #c9c9c9;border-radius:16px;padding:10px 14px;margin-top:20px}
+.adult summary{font-size:18px;font-weight:bold}
+.adult label{display:block;margin:10px 0 4px;font-weight:bold}
+.adult input{font:inherit;font-size:18px;padding:8px;border:2px solid #aaa;border-radius:10px;width:100%}
+.adult .r{display:flex;gap:8px}.adult .r input:first-child{width:70px;text-align:center}
+.adult button{font:inherit;font-size:17px;padding:8px 12px;border-radius:12px;border:3px solid #5aa9d6;background:#fff;margin:6px 6px 0 0}
+.adult .li{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #eee}
+.celeb{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:50}
+.celeb span{position:absolute;top:-60px;animation:fall 1.7s linear forwards}
+@keyframes fall{to{transform:translateY(112vh) rotate(360deg)}}
+.celeb .banner{position:absolute;top:28%;left:50%;transform:translateX(-50%);background:#fff7d6;border:5px solid #e0a800;border-radius:24px;padding:14px 22px;font-size:34px;font-weight:bold;text-align:center;animation:pp .6s}
+@keyframes pp{50%{transform:translateX(-50%) scale(1.12)}}
+</style>
+</head>
+<body>
+<header>🌟 Mon tableau de réussite</header>
+<main>
+<a class="back" href="index.html">⬅ Accueil</a>
+<div class="goal"><div class="t" id="gt"></div><div class="bar"><i id="gb"></i></div><div id="gc" style="font-size:20px;font-weight:bold"></div></div>
+<table id="tb"></table>
+<details class="adult"><summary>⚙️ Pour l'adulte</summary>
+  <label>Objectif de la semaine (nombre d'étoiles)</label><input id="gn" type="number" min="1" max="60">
+  <label>Récompense</label><input id="gl" type="text" maxlength="40">
+  <label>Les tâches</label><div id="tl"></div>
+  <label>Ajouter une tâche</label>
+  <div class="r"><input id="ne" type="text" maxlength="4" placeholder="🙂"><input id="nt" type="text" maxlength="40" placeholder="Je range mes jouets"></div>
+  <button id="add">➕ Ajouter</button><button id="reset">🔄 Nouvelle semaine</button><button id="save">💾 Enregistrer</button>
+</details>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const DAYS=['L','M','M','J','V','S','D'];
+const KEY='adam_reussite_v1';
+function monday(d){const x=new Date(d);x.setHours(0,0,0,0);x.setDate(x.getDate()-((x.getDay()+6)%7));return x.toISOString().slice(0,10)}
+const DEF={week:monday(new Date()),goal:{n:15,label:'🎁 Une surprise !'},nid:7,
+  tasks:[{id:1,e:'🎒',t:'Je range mon sac'},{id:2,e:'👀',t:'Je regarde la maîtresse'},{id:3,e:'🤝',t:'Je suis gentil'},{id:4,e:'📚',t:'Je fais mes devoirs'},{id:5,e:'🦷',t:'Je me brosse les dents'},{id:6,e:'🧸',t:'Je range mes jouets'}],marks:{}};
+let S;
+function load(){try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
+  if(!S||!S.tasks)S=JSON.parse(JSON.stringify(DEF));
+  if(S.week!==monday(new Date())){S.week=monday(new Date());S.marks={};}
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function rnd(a,b){return a+Math.floor(Math.random()*(b-a+1))}
+function celebrate(big,text){const o=document.createElement('div');o.className='celeb';const em=['🎉','⭐','✨','🌟','🎊'];
+  let h=big?'<div class="banner">'+text+'</div>':'';
+  for(let i=0;i<(big?40:12);i++)h+='<span style="left:'+rnd(0,94)+'%;animation-delay:'+(Math.random()*.6).toFixed(2)+'s;font-size:'+rnd(24,44)+'px">'+['🎉','⭐','✨','🌟','🎊'][rnd(0,4)]+'</span>';
+  o.innerHTML=h;document.body.appendChild(o);setTimeout(()=>o.remove(),big?3200:2200)}
+function total(){return Object.keys(S.marks).filter(k=>S.marks[k]&&S.tasks.some(t=>k.startsWith(t.id+'_'))).length}
+const today=(new Date().getDay()+6)%7;
+function render(){
+  let h='<tr><th></th>'+DAYS.map((d,i)=>'<th class="'+(i===today?'today':'')+'">'+d+'</th>').join('')+'</tr>';
+  S.tasks.forEach(t=>{
+    h+='<tr><td class="task"><span class="e">'+t.e+'</span>'+t.t+'</td>'+DAYS.map((d,i)=>{const on=S.marks[t.id+'_'+i];
+      return '<td class="'+(i===today?'todaycol':'')+'"><button class="'+(on?'on':'')+'" data-k="'+t.id+'_'+i+'" aria-label="'+t.t+' '+d+'">'+(on?'⭐':'')+'</button></td>'}).join('')+'</tr>';
+  });
+  $('tb').innerHTML=h;
+  $('tb').querySelectorAll('button').forEach(b=>b.onclick=()=>toggle(b.dataset.k));
+  const n=total(),g=S.goal.n;
+  $('gt').textContent=S.goal.label+'  ('+g+' ⭐)';
+  $('gb').style.width=Math.min(100,n/g*100)+'%';
+  $('gc').textContent=n>=g?'🏆 Objectif atteint ! Bravo !':n+' ⭐ sur '+g;
+}
+function toggle(k){
+  const was=total();
+  S.marks[k]=!S.marks[k];save();
+  const now=total();render();
+  if(S.marks[k]){ if(was<S.goal.n&&now>=S.goal.n)celebrate(true,'🏆 Objectif atteint ! 🏆');else celebrate(false) }
+}
+function adult(){
+  $('gn').value=S.goal.n;$('gl').value=S.goal.label;
+  $('tl').innerHTML=S.tasks.map(t=>'<div class="li"><span>'+t.e+' '+t.t+'</span><button data-d="'+t.id+'">🗑️</button></div>').join('');
+  $('tl').querySelectorAll('button').forEach(b=>b.onclick=()=>{S.tasks=S.tasks.filter(t=>t.id!==+b.dataset.d);save();render();adult()});
+}
+$('add').onclick=()=>{const e=$('ne').value.trim()||'⭐',t=$('nt').value.trim();if(!t)return;S.tasks.push({id:S.nid++,e,t});$('ne').value='';$('nt').value='';save();render();adult()};
+$('save').onclick=()=>{S.goal.n=Math.max(1,+$('gn').value||15);S.goal.label=$('gl').value.trim()||'🎁 Une surprise !';save();render()};
+$('reset').onclick=()=>{if(confirm('Commencer une nouvelle semaine ? Les étoiles seront effacées.')){S.marks={};save();render()}};
+load();render();adult();
+</script>
+</body>
+</html>
