@@ -18,7 +18,7 @@ a.back{display:inline-block;text-decoration:none;color:#1f3a4d;background:#fff;b
 .row{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
 .grp{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:40%}
 .dot{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:22px;color:#fff;border:3px solid}
-.dot.a{background:#1F5FBF;border-color:#123a78}.dot.b{background:#E8730C;border-color:#8a3f00}
+.dot.e{background:#fff;border:3px dashed #8a8a8a;color:#555}.dot.a{background:#1F5FBF;border-color:#123a78}.dot.b{background:#E8730C;border-color:#8a3f00}
 .sym{font-size:44px;font-weight:bold}
 .q{font-size:70px;font-weight:bold;min-width:70px}
 .big{font-size:64px;font-weight:bold}
@@ -51,6 +51,8 @@ a.back{display:inline-block;text-decoration:none;color:#1f3a4d;background:#fff;b
 <div class="opts" id="md">
   <button data-m="dots" class="on">🔵🟠 Avec les ronds</button>
   <button data-m="num">🔢 Avec les chiffres</button>
+  <button data-m="miss">🔍 3 + ? = 5 (avec ronds)</button>
+  <button data-m="missnum">🔍 3 + ? = 5 (chiffres)</button>
 </div>
 <div class="prog"><i id="pr"></i></div>
 <div class="stars" id="stars"></div>
@@ -68,23 +70,28 @@ a.back{display:inline-block;text-decoration:none;color:#1f3a4d;background:#fff;b
 const $=id=>document.getElementById(id);
 let max=3,mode='dots',N=10,qi=0,cur=null,firstTry=0,tried=false,stars='';
 function rnd(a,b){return a+Math.floor(Math.random()*(b-a+1))}
+const isMiss=()=>mode==='miss'||mode==='missnum';
 function newQ(){
   const s=rnd(2,max), a=rnd(1,s-1), b=s-a;
-  let ch=[s];
-  while(ch.length<3){const c=Math.max(0,Math.min(10,s+rnd(-2,2)));if(!ch.includes(c))ch.push(c)}
+  const ans=isMiss()?b:s;
+  let ch=[ans];
+  while(ch.length<3){const c=Math.max(0,Math.min(10,ans+rnd(-2,2)));if(!ch.includes(c))ch.push(c)}
   ch.sort(()=>Math.random()-.5);
-  return {a,b,s,ch};
+  return {a,b,s,ans,ch};
 }
 function dots(n,c){let h='';for(let i=0;i<n;i++)h+='<span class="dot '+c+'"></span>';return h}
+function sumRow(){return '<div class="grp" id="ga">'+dots(cur.a,'a')+'</div><span class="sym">+</span><div class="grp" id="gb">'+dots(cur.b,'b')+'</div><span class="sym">=</span><span class="q" id="qq">?</span>'}
+function missRow(){ // s ronds : a pleins, le reste en pointillés
+  return '<div class="grp" id="ga" style="max-width:100%">'+dots(cur.a,'a')+dots(cur.s-cur.a,'e')+'</div>'}
+function eqMiss(v){return '<div class="big" style="margin-top:8px" id="nn">'+cur.a+' + <span id="qq">'+(v===undefined?'?':v)+'</span> = '+cur.s+'</div>'}
 function render(){
   cur=newQ();tried=false;
   $('msg').textContent='';$('msg').className='msg';
   $('next').classList.add('hide');
-  const showDots=mode==='dots';
-  $('eq').innerHTML=showDots
-    ? '<div class="grp" id="ga">'+dots(cur.a,'a')+'</div><span class="sym">+</span><div class="grp" id="gb">'+dots(cur.b,'b')+'</div><span class="sym">=</span><span class="q" id="qq">?</span>'
-    : '<span class="big" id="nn">'+cur.a+' + '+cur.b+' = ?</span>';
-  $('help').classList.toggle('hide',showDots);
+  if(mode==='dots'){$('eq').innerHTML=sumRow();$('help').classList.add('hide')}
+  else if(mode==='num'){$('eq').innerHTML='<span class="big" id="nn">'+cur.a+' + '+cur.b+' = ?</span>';$('help').classList.remove('hide')}
+  else if(mode==='miss'){$('eq').innerHTML=missRow()+'<div style="width:100%">'+eqMiss()+'</div>';$('help').classList.add('hide')}
+  else {$('eq').innerHTML='<div style="width:100%">'+eqMiss()+'</div>';$('help').classList.remove('hide')}
   $('ch').innerHTML=cur.ch.map(v=>'<button data-v="'+v+'">'+v+'</button>').join('');
   [...$('ch').children].forEach(b=>b.onclick=()=>answer(b));
 }
@@ -92,13 +99,22 @@ function countAll(){
   const ds=[...document.querySelectorAll('#eq .dot')];
   ds.forEach((d,i)=>setTimeout(()=>{d.textContent=i+1;d.classList.add('pop')},i*450));
 }
+function revealMiss(){ // colorie les ronds manquants en orange
+  document.querySelectorAll('#eq .dot.e').forEach(d=>{d.classList.remove('e');d.classList.add('b')});
+}
+function showHelp(){
+  if(document.getElementById('ga'))return;
+  if(mode==='num')$('eq').innerHTML=sumRow();
+  else if(mode==='missnum')$('eq').innerHTML=missRow()+'<div style="width:100%">'+eqMiss()+'</div>';
+}
 function answer(b){
   const v=+b.dataset.v;
-  if(v===cur.s){
+  if(v===cur.ans){
     b.classList.add('good');
     [...$('ch').children].forEach(x=>x.disabled=true);
-    $('msg').innerHTML='<span class="ok">Bravo ! '+cur.a+' + '+cur.b+' = '+cur.s+' 🎉</span>';
-    const q=$('qq');if(q)q.textContent=cur.s;
+    if(isMiss()){showHelp();revealMiss();$('qq').textContent=cur.ans;
+      $('msg').innerHTML='<span class="ok">Bravo ! '+cur.a+' + '+cur.ans+' = '+cur.s+' 🎉</span>'}
+    else{$('msg').innerHTML='<span class="ok">Bravo ! '+cur.a+' + '+cur.b+' = '+cur.s+' 🎉</span>';const q=$('qq');if(q)q.textContent=cur.s}
     if(!tried){firstTry++;stars+='⭐'}else stars+='✨';
     $('stars').textContent=stars;
     $('next').classList.remove('hide');
@@ -107,15 +123,12 @@ function answer(b){
     b.classList.add('bad');b.disabled=true;
     $('card').classList.remove('shake');void $('card').offsetWidth;$('card').classList.add('shake');
     $('msg').innerHTML='<span class="ko">Compte encore 👇</span>';
-    if(mode==='num')showHelp();
+    if(mode==='num'||mode==='missnum')showHelp();
+    if(isMiss())revealMiss();
     countAll();
   }
 }
-function showHelp(){
-  if(document.getElementById('ga'))return;
-  $('eq').innerHTML='<div class="grp" id="ga">'+dots(cur.a,'a')+'</div><span class="sym">+</span><div class="grp" id="gb">'+dots(cur.b,'b')+'</div><span class="sym">=</span><span class="q" id="qq">?</span>';
-}
-$('help').onclick=()=>{tried=true;showHelp();countAll()};
+$('help').onclick=()=>{tried=true;showHelp();if(isMiss())revealMiss();countAll()};
 $('next').onclick=()=>{
   qi++;$('pr').style.width=(qi/N*100)+'%';
   if(qi>=N){$('game').classList.add('hide');$('end').classList.remove('hide');
