@@ -32,6 +32,13 @@ svg{width:100%;max-width:380px;height:auto}
 .prog{height:14px;background:#eee;border-radius:8px;overflow:hidden;margin:6px 0}
 .prog i{display:block;height:100%;background:#4fae6b;width:0;transition:width .3s}
 .big{font-size:64px;font-weight:bold}
+.celeb{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:50}
+.celeb span{position:absolute;top:-60px;animation:fall 1.7s linear forwards}
+@keyframes fall{to{transform:translateY(112vh) rotate(360deg)}}
+.celeb .banner{position:absolute;top:28%;left:50%;transform:translateX(-50%);background:#fff7d6;border:5px solid #e0a800;border-radius:24px;padding:14px 26px;font-size:38px;font-weight:bold;white-space:nowrap;animation:pp .6s}
+.navrow{display:flex;gap:10px;margin-top:10px}
+.navrow button{font:inherit;font-size:22px;font-weight:bold;padding:14px;border-radius:18px;border:4px solid #5aa9d6;background:#fff;color:#1f3a4d}
+#prev{flex:0 0 42%}#next{flex:1;background:#d6eefa}
 </style>
 </head>
 <body>
@@ -49,23 +56,42 @@ svg{width:100%;max-width:380px;height:auto}
   <button class="help hide" id="help">👀 Je veux de l'aide</button>
   <div class="msg" id="msg"></div>
   <div class="choices" id="ch"></div>
-  <button class="next hide" id="next">Suivant ➜</button>
+  <div class="navrow"><button id="prev" class="hide">⬅ Précédent</button><button id="next" class="hide">Suivant ➜</button></div>
 </div>
 <div class="card hide" id="end"><div class="big">🏆</div><div class="big" id="score" style="font-size:36px"></div>
   <button class="next" id="again">🔁 Rejouer</button></div>
 </main>
 <script>
 const $=id=>document.getElementById(id);
-const L=[[34,44],[55,44],[76,44],[97,44],[34,74],[55,74],[76,74],[97,74]];
-const R=L.map(p=>[p[0]+86,p[1]]);
-let mode='dots',N=10,qi=0,cur=null,firstTry=0,tried=false,stars='';
 function rnd(a,b){return a+Math.floor(Math.random()*(b-a+1))}
+let Q=[],R=[],qi=0,cur=null,done=false,timer=null;
+const N=10;
+function celebrate(){const o=document.createElement('div');o.className='celeb';const em=['🎉','⭐','✨','🌟','🎊'];
+  let h='<div class="banner">⭐ Bravo ! ⭐</div>';
+  for(let i=0;i<30;i++)h+='<span style="left:'+rnd(0,94)+'%;animation-delay:'+(Math.random()*.7).toFixed(2)+'s;font-size:'+rnd(26,46)+'px">'+em[rnd(0,4)]+'</span>';
+  o.innerHTML=h;document.body.appendChild(o);setTimeout(()=>o.remove(),2300)}
+function updateTop(){
+  $('pr').style.width=(R.filter(x=>x!==undefined).length/N*100)+'%';
+  let s='';for(let i=0;i<N;i++){if(R[i]===true)s+='⭐';else if(R[i]===false)s+='▫️'}
+  $('stars').textContent=s}
+function go(i){clearTimeout(timer);if(i>=N){finish();return}show(i)}
+function finish(){$('game').classList.add('hide');$('end').classList.remove('hide');
+  $('score').textContent=R.filter(Boolean).length+' / '+N+' du premier coup ! 🌟'}
+function start(){clearTimeout(timer);Q=[];R=[];qi=0;$('end').classList.add('hide');$('game').classList.remove('hide');show(0)}
+function afterCorrect(){celebrate();timer=setTimeout(()=>go(qi+1),2400)}
+function afterWrong(){$('next').classList.remove('hide')}
+function setup(){
+  $('prev').onclick=()=>go(qi-1);$('next').onclick=()=>go(qi+1);$('again').onclick=start;
+}
+const L=[[34,44],[55,44],[76,44],[97,44],[34,74],[55,74],[76,74],[97,74]];
+const R2=L.map(p=>[p[0]+86,p[1]]);
+let mode='dots';
 function text(x,y,v){return '<text x="'+x+'" y="'+y+'" text-anchor="middle" font-size="26" font-weight="800" font-family="Trebuchet MS,Arial" fill="#1f3a4d">'+v+'</text>'}
 function plate(q,showA,showB,fillMissing){
   const ox=48;let s='<svg viewBox="0 0 316 190">';
   s+='<g transform="translate('+ox+',38)"><ellipse cx="110" cy="60" rx="106" ry="56" fill="#fff" stroke="#1f3a4d" stroke-width="3"/><ellipse cx="110" cy="60" rx="94" ry="45" fill="#fff" stroke="#1f3a4d" stroke-width="2"/><line x1="116" y1="15" x2="104" y2="105" stroke="#1f3a4d" stroke-width="3"/>';
   if(showA)for(let i=0;i<q.a;i++)s+='<circle cx="'+L[i][0]+'" cy="'+(L[i][1]+6)+'" r="8" fill="#1F5FBF" stroke="#123a78" stroke-width="2"/>';
-  if(showB)for(let i=0;i<q.b;i++)s+='<circle cx="'+(R[i][0]+4)+'" cy="'+(R[i][1]+6)+'" r="8" fill="#E8730C" stroke="#8a3f00" stroke-width="2"/>';
+  if(showB)for(let i=0;i<q.b;i++)s+='<circle cx="'+(R2[i][0]+4)+'" cy="'+(R2[i][1]+6)+'" r="8" fill="#E8730C" stroke="#8a3f00" stroke-width="2"/>';
   s+='</g><line x1="'+(ox+170)+'" y1="40" x2="'+(ox+155)+'" y2="54" stroke="#1f3a4d" stroke-width="2.5"/>';
   s+='<rect x="'+(ox+142)+'" y="2" width="56" height="40" rx="9" fill="#fff" stroke="#1f3a4d" stroke-width="2.5"/>'+text(ox+170,32,q.t);
   [[ox+62,q.hideA?'?':q.a],[ox+158,q.hideA?q.b:'?']].forEach(([cx,v],i)=>{
@@ -73,7 +99,7 @@ function plate(q,showA,showB,fillMissing){
   return s+'</svg>';
 }
 function newQ(){
-  const level=+document.body.dataset.l||7;
+  const level=7;
   const t=rnd(3,level), p=rnd(0,t), m=t-p;
   const hideA=Math.random()<.5;               // le trou est à gauche ?
   const a=hideA?m:p, b=hideA?p:m;
@@ -91,40 +117,38 @@ function eqHTML(q,v){
   return q.f==='x+_=t' ? '<span>'+left+'</span><span>+</span><span>'+right+'</span><span>=</span><span>'+q.t+'</span>'
                        : '<span>'+q.t+'</span><span>=</span><span>'+left+'</span><span>+</span><span>'+right+'</span>';
 }
-function render(){
-  cur=newQ();tried=false;
-  $('msg').textContent='';$('next').classList.add('hide');
+
+function show(i){
+  clearTimeout(timer);qi=i;if(!Q[i])Q[i]=newQ();cur=Q[i];done=false;
+  $('msg').textContent='';$('next').classList.add('hide');$('prev').classList.toggle('hide',i===0);
   $('plate').innerHTML=plate(cur,!cur.hideA&&mode==='dots',cur.hideA&&mode==='dots');
-  // dots shown only on the known side
   $('eq').innerHTML=eqHTML(cur);
   $('help').classList.toggle('hide',mode==='dots');
   $('ch').innerHTML=cur.ch.map(v=>'<button data-v="'+v+'">'+v+'</button>').join('');
   [...$('ch').children].forEach(b=>b.onclick=()=>answer(b));
+  updateTop();
 }
-function showAll(){ $('plate').innerHTML=plate(cur,true,true) }
+function showAll(){$('plate').innerHTML=plate(cur,true,true)}
 function answer(b){
-  const v=+b.dataset.v;
-  if(v===cur.m){
-    b.classList.add('good');[...$('ch').children].forEach(x=>x.disabled=true);
-    showAll();$('eq').innerHTML=eqHTML(cur,cur.m);
-    $('msg').innerHTML='<span class="ok">Bravo ! 🎉</span>';
-    if(!tried){firstTry++;stars+='⭐'}else stars+='✨';
-    $('stars').textContent=stars;$('next').classList.remove('hide');
+  if(done)return;done=true;
+  const v=+b.dataset.v, ok=v===cur.m;
+  [...$('ch').children].forEach(x=>x.disabled=true);
+  if(R[qi]===undefined)R[qi]=ok;
+  showAll();
+  if(ok){
+    b.classList.add('good');$('eq').innerHTML=eqHTML(cur,cur.m);
+    $('msg').innerHTML='<span class="ok">Bravo ! 🎉</span>';updateTop();afterCorrect();
   }else{
-    tried=true;b.classList.add('bad');b.disabled=true;
+    b.classList.add('bad');
+    [...$('ch').children].forEach(x=>{if(+x.dataset.v===cur.m)x.classList.add('good')});
+    $('eq').innerHTML=eqHTML(cur,cur.m);
     const c=document.querySelector('.card');c.classList.remove('shake');void c.offsetWidth;c.classList.add('shake');
-    $('msg').innerHTML='<span class="ko">Regarde les ronds 👇</span>';
-    showAll();
+    $('msg').innerHTML='<span class="ko">Regarde les ronds 👇 puis appuie sur Suivant</span>';updateTop();afterWrong();
   }
 }
-$('help').onclick=()=>{tried=true;showAll()};
-$('next').onclick=()=>{qi++;$('pr').style.width=(qi/N*100)+'%';
-  if(qi>=N){$('game').classList.add('hide');$('end').classList.remove('hide');$('score').textContent=firstTry+' / '+N+' du premier coup ! 🌟'}
-  else render()};
-function start(){qi=0;firstTry=0;stars='';$('stars').textContent='';$('pr').style.width='0';$('end').classList.add('hide');$('game').classList.remove('hide');render()}
-$('again').onclick=start;
+$('help').onclick=()=>{if(done)return;showAll()};
+setup();
 document.querySelectorAll('#md button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#md button').forEach(x=>x.classList.remove('on'));b.classList.add('on');mode=b.dataset.m;start()});
-document.body.dataset.l=7;
 start();
 </script>
 </body>
