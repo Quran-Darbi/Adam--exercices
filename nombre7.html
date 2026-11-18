@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Le nombre 7 – jeux pour Adam</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;font-family:"Trebuchet MS",Verdana,sans-serif;background:#fffaf0;color:#1f3a4d;min-height:100vh}
+header{background:#ffd08a;padding:14px;text-align:center;font-size:24px;font-weight:bold}
+main{max-width:640px;margin:0 auto;padding:10px 14px 40px}
+a.back,button.back{display:inline-block;text-decoration:none;color:#1f3a4d;background:#fff;border:3px solid #5aa9d6;border-radius:14px;padding:8px 14px;font:inherit;font-size:18px}
+.hide{display:none!important}
+.menu{display:block;width:100%;font:inherit;text-align:center;color:#1f3a4d;background:#ffe3b8;border:4px solid #e8993a;border-radius:24px;padding:16px 12px;margin:12px 0;font-size:25px;font-weight:bold;box-shadow:0 4px 0 rgba(31,58,77,.15)}
+.menu:active{transform:translateY(3px);box-shadow:none}
+.menu small{display:block;font-size:16px;font-weight:normal;color:#4a6272;margin-top:3px}
+.card{background:#fff;border-radius:24px;border:4px solid #e8993a;text-align:center;padding:12px 8px 16px;margin:8px 0}
+.task{font-size:19px;text-align:center;font-weight:bold;margin:8px 0 2px;color:#4a6272}
+.prog{height:14px;background:#eee;border-radius:8px;overflow:hidden;margin:6px 0}
+.prog i{display:block;height:100%;background:#4fae6b;width:0;transition:width .3s}
+.stars{font-size:24px;text-align:center;min-height:34px;letter-spacing:2px}
+.msg{font-size:22px;font-weight:bold;text-align:center;min-height:36px;margin:6px 0}
+.ok{color:#1f7a42}.ko{color:#c0392b}
+.choices{display:flex;gap:12px;margin-top:12px}
+.choices button{flex:1;font:inherit;font-size:48px;font-weight:bold;padding:16px 6px;border-radius:20px;border:4px solid #3f86b8;background:#fff;color:#1f3a4d}
+.choices button.bad{background:#fde1de;border-color:#c0392b;color:#c0392b}
+.choices button.good{background:#c8efd6;border-color:#2f9e5b;color:#1f7a42}
+.go{display:block;width:100%;font:inherit;font-size:24px;font-weight:bold;padding:14px;margin-top:10px;border-radius:18px;border:4px solid #5aa9d6;background:#d6eefa;color:#1f3a4d}
+.navrow{display:flex;gap:10px;margin-top:10px}
+.navrow button{font:inherit;font-size:22px;font-weight:bold;padding:14px;border-radius:18px;border:4px solid #5aa9d6;background:#fff;color:#1f3a4d}
+#prev{flex:0 0 42%}#next{flex:1;background:#d6eefa}
+.big{font-size:64px;font-weight:bold}
+.shake{animation:sh .4s}
+@keyframes sh{20%{transform:translateX(-12px)}40%{transform:translateX(12px)}60%{transform:translateX(-8px)}80%{transform:translateX(8px)}}
+.celeb{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:50}
+.celeb span{position:absolute;top:-60px;animation:fall 1.7s linear forwards}
+@keyframes fall{to{transform:translateY(112vh) rotate(360deg)}}
+.celeb .banner{position:absolute;top:28%;left:50%;transform:translateX(-50%);background:#fff7d6;border:5px solid #e0a800;border-radius:24px;padding:14px 26px;font-size:38px;font-weight:bold;white-space:nowrap;animation:pp .6s}
+@keyframes pp{50%{transform:translateX(-50%) scale(1.12)}}
+/* gâteau */
+svg{width:100%;max-width:380px;height:auto}
+.slot{cursor:pointer}
+/* 7ème élément */
+.row{display:flex;align-items:flex-end;gap:4px;margin:10px 0}
+.row.rtl{flex-direction:row-reverse}
+.arr{flex:1;font-size:22px;color:#e8993a;min-width:0;padding-bottom:6px}
+.it{flex:1;min-width:0;padding:6px 0 2px;display:flex;flex-direction:column;align-items:center;border-radius:10px;padding:2px 0}
+.it .em{font-size:21px;line-height:1.3}
+.it .num{font-size:15px;font-weight:bold;height:20px;color:#1f3a4d}
+.it.sel{background:#bfe3f7;box-shadow:0 0 0 3px #3f86b8}
+.it.cnt{background:#fff3b0}
+/* train */
+.train{display:flex;gap:4px;justify-content:center;align-items:center;margin:8px 0}
+.train .eng{font-size:34px}
+.wg{flex:1;max-width:52px;aspect-ratio:1;border:3px solid #1f3a4d;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:bold;background:#fff}
+.wg.seven{background:#bfe3f7}
+.wg.hole{border:3px dashed #e0a800;background:#fff7d6;color:#e0a800}
+/* voisins */
+.nb{display:flex;gap:6px;justify-content:center;align-items:center;font-size:40px;font-weight:bold;margin:8px 0}
+.nb .c{width:70px;height:70px;border:4px solid #1f3a4d;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#fff}
+.nb .c.hole{border:4px dashed #e0a800;background:#fff7d6;color:#e0a800}
+.nb .c.fill{background:#c8efd6;border-color:#2f9e5b}
+/* maison */
+.roof{width:0;height:0;margin:0 auto;border-left:100px solid transparent;border-right:100px solid transparent;border-bottom:50px solid #e8993a;position:relative}
+.rooft{position:absolute;left:-30px;top:12px;width:60px;font-size:34px;font-weight:bold;color:#fff}
+.house{width:200px;margin:0 auto;border:4px solid #1f3a4d;border-top:none;background:#fff}
+.house .r{display:flex;border-top:3px solid #1f3a4d;height:38px;font-size:26px;font-weight:bold}
+.house .r:first-child{border-top:none}
+.house .r div{flex:1;display:flex;align-items:center;justify-content:center}
+.house .r div+div{border-left:3px solid #1f3a4d}
+.house .r.cur{background:#fff7d6}
+.house .r.cur div+div{color:#e0a800}
+/* barre */
+.grid{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:8px 0}
+.g{width:64px;height:64px;font-size:42px;display:flex;align-items:center;justify-content:center;border-radius:14px;border:3px solid #ddd;background:#fff;position:relative}
+.g.x::after{content:"❌";position:absolute;font-size:46px;inset:0;display:flex;align-items:center;justify-content:center}
+.g.x{opacity:.55;border-color:#c0392b}
+.eq{font-size:46px;font-weight:bold;margin:8px 0}
+</style>
+</head>
+<body>
+<header>7️⃣ Le nombre 7</header>
+<main>
+
+<div id="hub">
+  <a class="back" href="maths.html">⬅ Maths</a>
+  <button class="menu" data-g="gateau">🎂 Les gâteaux<small>Complète pour avoir 7 bougies</small></button>
+  <button class="menu" data-g="septieme">🥚 Le 7ème élément<small>Touche le 7ème, dans le bon sens !</small></button>
+  <button class="menu" data-g="chemin">🚂 Le chemin des nombres<small>Complète le train</small></button>
+  <button class="menu" data-g="voisins">🏘️ Les nombres voisins<small>Avant et après</small></button>
+  <button class="menu" data-g="maison">🏠 La maison de 7<small>Complète tous les étages</small></button>
+  <button class="menu" data-g="barre">❌ Barre et calcule<small>7 moins… combien il reste ?</small></button>
+  <a class="back" style="margin-top:6px" href="additions.html">🔵🟠 Autres jeux : Je compte et j'ajoute</a>
+</div>
+
+<div id="play" class="hide">
+  <button class="back" id="tohub">⬅ Les jeux du 7</button>
+  <div class="task" id="hint"></div>
+  <div class="prog"><i id="pr"></i></div>
+  <div class="stars" id="stars"></div>
+  <div id="game">
+    <div class="card" id="area"></div>
+    <div class="msg" id="msg"></div>
+    <div class="navrow"><button id="prev" class="hide">⬅ Précédent</button><button id="next" class="hide">Suivant ➜</button></div>
+  </div>
+  <div class="card hide" id="end">
+    <div class="big">🏆</div>
+    <div class="big" id="score" style="font-size:36px"></div>
+    <button class="go" id="again">🔁 Rejouer</button>
+    <button class="go" id="endhub" style="background:#fff">⬅ Les jeux du 7</button>
+  </div>
+</div>
+
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const shuffle=a=>a.map(x=>[Math.random(),x]).sort((p,q)=>p[0]-q[0]).map(p=>p[1]);
+const N=8;
+let g=null,Q=[],R=[],qi=0,done=false,timer=null,anim=[];
+
+function celebrate(){const o=document.createElement('div');o.className='celeb';const em=['🎉','⭐','✨','🌟','🎊'];
+  let h='<div class="banner">⭐ Bravo ! ⭐</div>';
+  for(let i=0;i<30;i++)h+='<span style="left:'+rnd(0,94)+'%;animation-delay:'+(Math.random()*.7).toFixed(2)+'s;font-size:'+rnd(26,46)+'px">'+em[rnd(0,4)]+'</span>';
+  o.innerHTML=h;document.body.appendChild(o);setTimeout(()=>o.remove(),2300)}
+function updateTop(){
+  $('pr').style.width=(R.filter(x=>x!==undefined).length/N*100)+'%';
+  let s='';for(let i=0;i<N;i++){if(R[i]===true)s+='⭐';else if(R[i]===false)s+='▫️'}
+  $('stars').textContent=s}
+function clearTimers(){clearTimeout(timer);anim.forEach(clearTimeout);anim=[]}
+function go(i){clearTimers();if(i>=N){finish();return}show(i)}
+function finish(){$('game').classList.add('hide');$('end').classList.remove('hide');
+  $('score').textContent=R.filter(Boolean).length+' / '+N+' du premier coup ! 🌟'}
+function start(){clearTimers();Q=[];R=[];qi=0;if(g.init)g.init();$('end').classList.add('hide');$('game').classList.remove('hide');show(0)}
+function show(i){clearTimers();qi=i;if(!Q[i])Q[i]=g.make(i);done=false;
+  $('msg').innerHTML='';$('next').classList.add('hide');$('prev').classList.toggle('hide',i===0);
+  $('area').innerHTML='';g.draw(Q[i],$('area'));updateTop()}
+function good(){if(done)return;done=true;if(R[qi]===undefined)R[qi]=true;
+  $('msg').innerHTML='<span class="ok">Bravo ! 🎉</span>';updateTop();celebrate();timer=setTimeout(()=>go(qi+1),2400)}
+function bad(t,final){if(R[qi]===undefined)R[qi]=false;
+  $('msg').innerHTML='<span class="ko">'+t+'</span>';updateTop();
+  const c=$('area');c.classList.remove('shake');void c.offsetWidth;c.classList.add('shake');
+  if(final){done=true;$('next').classList.remove('hide')}}
+
+function opts(c){const s=new Set([c]);while(s.size<3){s.add(Math.max(0,Math.min(9,c+rnd(-2,2))))}return shuffle([...s])}
+function drawChoices(area,q,onRes){
+  const d=document.createElement('div');d.className='choices';
+  d.innerHTML=q.ch.map(v=>'<button data-v="'+v+'">'+v+'</button>').join('');
+  area.appendChild(d);
+  [...d.children].forEach(b=>b.onclick=()=>{
+    if(done)return;const ok=+b.dataset.v===q.ans;
+    [...d.children].forEach(x=>x.disabled=true);
+    if(ok){b.classList.add('good')}else{b.classList.add('bad');[...d.children].forEach(x=>{if(+x.dataset.v===q.ans)x.classList.add('good')})}
+    onRes(ok)});
+  return d}
+
+const GAMES={};
+
+/* 1. Les gâteaux : compléter pour avoir 7 bougies */
+GAMES.gateau={title:'🎂 Les gâteaux',hint:'Ajoute des bougies pour que le gâteau ait 7 bougies.',
+  make(){return {k:rnd(1,6),add:new Set()}},
+  draw(q,area){
+    const X=i=>50+i*37;
+    let s='<svg viewBox="0 0 320 200"><ellipse cx="160" cy="180" rx="150" ry="16" fill="#e8d9c4" stroke="#1f3a4d" stroke-width="3"/>'
+     +'<rect x="30" y="112" width="260" height="62" rx="12" fill="#ffd9e8" stroke="#1f3a4d" stroke-width="3"/>'
+     +'<path d="M30 124 q20 22 40 0 q20 22 40 0 q20 22 40 0 q20 22 40 0 q20 22 40 0 q20 22 40 0 q20 22 20 0" fill="#fff" stroke="#1f3a4d" stroke-width="3"/>';
+    for(let i=0;i<7;i++){
+      const fixed=i<q.k, on=fixed||q.add.has(i);
+      if(on) s+='<g><rect x="'+(X(i)-6)+'" y="74" width="12" height="40" rx="3" fill="#6bb6e8" stroke="#1f3a4d" stroke-width="2"/><ellipse cx="'+X(i)+'" cy="64" rx="6" ry="10" fill="#ff9f1c" stroke="#c4600a" stroke-width="2"/></g>';
+      else s+='<circle cx="'+X(i)+'" cy="96" r="14" fill="#fff7d6" stroke="#e0a800" stroke-width="3" stroke-dasharray="5 4"/>';
+      if(!fixed) s+='<rect class="slot" data-i="'+i+'" x="'+(X(i)-18)+'" y="52" width="36" height="66" fill="transparent"/>';
+    }
+    s+='</svg>';
+    area.innerHTML=s+'<button class="go" id="chk">✅ Vérifier</button>';
+    const total=()=>q.k+q.add.size;
+    area.querySelectorAll('.slot').forEach(r=>r.onclick=()=>{
+      if(done)return;const i=+r.dataset.i;q.add.has(i)?q.add.delete(i):q.add.add(i);
+      $('msg').innerHTML='';const keep=q;g.draw(keep,area)});
+    $('chk').onclick=()=>{
+      if(done)return;const n=total();
+      if(n===7)good();
+      else bad(n<7?'Il manque des bougies. Essaie encore !':'Il y a trop de bougies. Retire-en !',false)};
+  }};
+
+/* 2. Le 7ème élément, dans le bon sens */
+GAMES.septieme={title:'🥚 Le 7ème élément',hint:'Suis la flèche et touche le 7ème.',
+  make(){const em=['🥚','🌸','🦋','🚗','⭐','🍎','🐟','🎈'];
+    return {e:em[rnd(0,em.length-1)],n:rnd(8,10),rtl:Math.random()<.5}},
+  draw(q,area){
+    let h='<div class="row'+(q.rtl?' rtl':'')+'"><div class="arr">'+(q.rtl?'⬅️':'➡️')+'</div>';
+    for(let i=1;i<=q.n;i++)h+='<div class="it" data-n="'+i+'"><span class="em">'+q.e+'</span><span class="num"></span></div>';
+    area.innerHTML=h+'</div>';
+    const its=[...area.querySelectorAll('.it')];
+    its.forEach(el=>el.onclick=()=>{
+      if(done)return;const n=+el.dataset.n;
+      if(n===7){its.slice(0,7).forEach((x,j)=>x.querySelector('.num').textContent=j+1);el.classList.add('sel');good()}
+      else{done=true;its.forEach(x=>x.style.pointerEvents='none');
+        its.slice(0,7).forEach((x,j)=>anim.push(setTimeout(()=>{x.classList.add('cnt');x.querySelector('.num').textContent=j+1;if(j===6)x.classList.add('sel')},350*j)));
+        bad('Compte avec la flèche : le 7ème est ici 👆',true)}});
+  }};
+
+/* 3. Le chemin des nombres */
+GAMES.chemin={title:'🚂 Le chemin des nombres',hint:'Quel nombre manque dans le train ?',
+  make(){
+    const asc=Math.random()<.5,a=rnd(1,3);let seq=[];for(let i=0;i<7;i++)seq.push(a+i);
+    if(!asc)seq.reverse();
+    const hole=rnd(1,6),ans=seq[hole];return {seq,hole,ans,ch:opts(ans)}},
+  draw(q,area){
+    let h='<div class="train"><span class="eng">'+(q.seq[0]<q.seq[1]?'🚂':'🚂')+'</span>';
+    q.seq.forEach((v,i)=>h+='<div class="wg'+(i===q.hole?' hole':'')+(v===7&&i!==q.hole?' seven':'')+'" id="w'+i+'">'+(i===q.hole?'?':v)+'</div>');
+    area.innerHTML=h+'</div>';
+    drawChoices(area,q,ok=>{
+      const w=$('w'+q.hole);w.textContent=q.ans;w.classList.remove('hole');if(q.ans===7)w.classList.add('seven');
+      ok?good():bad('Regarde bien le train, puis appuie sur Suivant',true)});
+  }};
+
+/* 4. Les nombres voisins */
+GAMES.voisins={title:'🏘️ Les nombres voisins',hint:'Quel est le nombre qui manque ?',
+  make(){
+    const b=Math.random()<.5?7:rnd(1,8),asc=Math.random()<.5;
+    const v=[asc?b-1:b+1,b,asc?b+1:b-1],pos=rnd(0,2);
+    return {v,pos,sym:asc?'&lt;':'&gt;',ans:v[pos],ch:opts(v[pos])}},
+  draw(q,area){
+    let h='<div class="nb">';
+    q.v.forEach((x,i)=>{if(i)h+='<span>'+q.sym+'</span>';h+='<div class="c'+(i===q.pos?' hole':'')+'" id="c'+i+'">'+(i===q.pos?'?':x)+'</div>'});
+    area.innerHTML=h+'</div>';
+    drawChoices(area,q,ok=>{
+      const c=$('c'+q.pos);c.textContent=q.ans;c.classList.remove('hole');c.classList.add('fill');
+      ok?good():bad('Regarde bien : avant, après… puis appuie sur Suivant',true)});
+  }};
+
+/* 5. La maison de 7 */
+GAMES.maison={title:'🏠 La maison de 7',hint:'Complète la maison : chaque étage fait 7.',
+  init(){this.order=shuffle([0,1,2,3,4,5,6,7])},
+  make(i){const k=this.order[i],ans=7-k;return {k,ans,ch:opts(ans),i}},
+  draw(q,area){
+    const filled=new Set(this.order.slice(0,q.i));
+    let h='<div class="roof"><div class="rooft">7</div></div><div class="house">';
+    for(let k=0;k<=7;k++)h+='<div class="r'+(k===q.k?' cur':'')+'"><div>'+k+'</div><div id="h'+k+'">'+(filled.has(k)?7-k:(k===q.k?'?':''))+'</div></div>';
+    area.innerHTML=h+'</div>';
+    drawChoices(area,q,ok=>{
+      $('h'+q.k).textContent=q.ans;
+      ok?good():bad('Regarde bien l\'étage, puis appuie sur Suivant',true)});
+  }};
+
+/* 6. Barre et calcule */
+GAMES.barre={title:'❌ Barre et calcule',hint:'Barre les éléments, puis trouve combien il reste.',
+  make(){const em=['🌸','🍎','🍬','🐟','⭐','🎈'];const k=rnd(1,6);return {e:em[rnd(0,em.length-1)],k,ans:7-k,ch:opts(7-k),x:new Set()}},
+  draw(q,area){
+    let h='<div class="grid">';for(let i=0;i<7;i++)h+='<div class="g'+(q.x.has(i)?' x':'')+'" data-i="'+i+'">'+q.e+'</div>';
+    area.innerHTML=h+'</div><div class="eq">7 − '+q.k+' = <span id="res">?</span></div><div id="chbox"></div>';
+    const upd=()=>{
+      const box=$('chbox');box.innerHTML='';
+      if(q.x.size===q.k){$('msg').innerHTML='';drawChoices(box,q,ok=>{$('res').textContent=q.ans;ok?good():bad('Compte ce qui reste, puis appuie sur Suivant',true)})}
+      else $('msg').innerHTML='<span class="ko" style="color:#4a6272">Barre '+q.k+' élément'+(q.k>1?'s':'')+' ('+q.x.size+' barré'+(q.x.size>1?'s':'')+')</span>'};
+    area.querySelectorAll('.g').forEach(el=>el.onclick=()=>{
+      if(done)return;const i=+el.dataset.i;q.x.has(i)?q.x.delete(i):q.x.add(i);el.classList.toggle('x');upd()});
+    upd();
+  }};
+
+/* menu */
+document.querySelectorAll('.menu').forEach(b=>b.onclick=()=>{
+  g=GAMES[b.dataset.g];$('hub').classList.add('hide');$('play').classList.remove('hide');
+  $('hint').textContent=g.hint;document.querySelector('header').textContent=g.title;start()});
+function toHub(){clearTimers();$('play').classList.add('hide');$('hub').classList.remove('hide');document.querySelector('header').textContent='7️⃣ Le nombre 7'}
+$('tohub').onclick=toHub;$('endhub').onclick=toHub;
+$('prev').onclick=()=>go(qi-1);$('next').onclick=()=>go(qi+1);$('again').onclick=start;
+</script>
+</body>
+</html>
